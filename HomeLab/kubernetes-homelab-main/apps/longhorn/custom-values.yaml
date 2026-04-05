@@ -1,0 +1,10 @@
+persistence:
+  defaultClass: true
+defaultSettings:
+  backupTarget: "s3://k8s-backups@us-east-1/"
+  backupTargetCredentialSecret: "minio-credentials"
+service:
+  ui:
+    type: LoadBalancer
+    port: 80
+

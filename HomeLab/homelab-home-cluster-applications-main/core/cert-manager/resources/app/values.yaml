@@ -1,0 +1,29 @@
+---
+installCRDs: true
+
+extraArgs:
+  - "--dns01-recursive-nameservers-only"
+  - "--dns01-recursive-nameservers=1.1.1.1:53,1.0.0.1:53"
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+    limits:
+      memory: 100Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 147Mi
+    limits:
+      memory: 147Mi
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 108Mi
+  limits:
+    memory: 108Mi

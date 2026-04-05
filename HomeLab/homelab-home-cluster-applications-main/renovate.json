@@ -1,0 +1,52 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "helpers:pinGitHubActionDigests",
+        ":dependencyDashboard",
+        ":semanticCommitTypeAll(chore)"
+    ],
+    "prHourlyLimit": 0,
+    "prConcurrentLimit": 0,
+    "baseBranches": [
+        "main"
+    ],
+    "enabledManagers": [
+        "helm-values",
+        "helmv3",
+        "flux",
+        "github-actions",
+        "pre-commit"
+    ],
+    "helm-values": {
+        "fileMatch": [
+            "(^|/)values\\.yaml$"
+        ],
+        "pinDigests": false
+    },
+    "helmv3": {
+        "fileMatch": [
+            "(^|/)Chart\\.yaml$"
+        ]
+    },
+    "flux": {
+        "fileMatch": [
+            "(^|/)applications/.+\\.ya?ml$",
+            "(^|/)core/.+\\.ya?ml$",
+            "(^|/)home-assistant/.+\\.ya?ml$",
+            "(^|/)infrastructure/.+\\.ya?ml$"
+        ]
+    },
+    "github-actions": {
+        "fileMatch": [
+            "^(workflow-templates|\\.github/workflows)/[^/]+\\.ya?ml$",
+            "(^|/)action\\.ya?ml$"
+        ]
+    },
+    "pre-commit": {
+        "enabled": true,
+        "fileMatch": [
+            "(^|/)\\.pre-commit-config\\.ya?ml$"
+        ]
+    }
+}

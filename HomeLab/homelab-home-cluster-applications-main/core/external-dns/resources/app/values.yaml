@@ -1,0 +1,47 @@
+---
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: registry.k8s.io
+  repository: external-dns/external-dns
+  tag: v0.16.1
+
+crd:
+  create: true
+
+sources:
+  - crd
+  - service
+  - ingress
+  - traefik-proxy
+  - gateway-grpcroute
+  - gateway-httproute
+  - gateway-tlsroute
+  - gateway-udproute
+  - gateway-tcproute
+
+interval: 2m
+
+logLevel: warning
+
+domainFilters:
+  - muehlbachler.io
+annotationFilter: external-dns.alpha.kubernetes.io/provider=public
+
+txtOwnerId: external-dns-prod-google
+txtPrefix: extdns-
+provider: google
+google:
+  serviceAccountSecret: external-dns-google
+  project: muehlbachler-dns
+extraArgs:
+  traefik-disable-legacy: ""
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 100Mi
+  limits:
+    memory: 100Mi

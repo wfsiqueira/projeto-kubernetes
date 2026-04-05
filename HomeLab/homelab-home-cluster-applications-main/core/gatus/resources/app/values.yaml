@@ -1,0 +1,119 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/common-3.3.0/charts/library/common/values.schema.json
+controllers:
+  main:
+    annotations:
+      reloader.stakater.com/auto: "true"
+    initContainers:
+      init-config:
+        image: &configSyncImage
+          repository: ghcr.io/kiwigrid/k8s-sidecar
+          tag: 1.30.3
+
+        env:
+          FOLDER: /config
+          LABEL: gatus.io/enabled
+          NAMESPACE: ALL
+          RESOURCE: both
+          UNIQUE_FILENAMES: true
+          METHOD: LIST
+
+        resources: &configSyncResources
+          requests:
+            cpu: 10m
+            memory: 116Mi
+          limits:
+            memory: 116Mi
+    containers:
+      gatus:
+        image:
+          repository: ghcr.io/twin/gatus
+          pullPolicy: IfNotPresent
+          tag: v5.17.0
+
+        env:
+          - name: GATUS_CONFIG_PATH
+            value: /config
+
+        resources:
+          requests:
+            cpu: 10m
+            memory: 133Mi
+          limits:
+            memory: 133Mi
+
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+          startup:
+            enabled: true
+            spec:
+              failureThreshold: 30
+              periodSeconds: 5
+
+      config-sync:
+        image: *configSyncImage
+        env:
+          FOLDER: /config
+          LABEL: gatus.io/enabled
+          NAMESPACE: ALL
+          RESOURCE: both
+          UNIQUE_FILENAMES: true
+          METHOD: WATCH
+        resources: *configSyncResources
+
+serviceAccount:
+  create: true
+
+defaultPodOptions:
+  automountServiceAccountToken: true
+
+service:
+  gatus:
+    controller: main
+    ports:
+      http:
+        port: 8080
+
+ingress:
+  gatus:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: cluster-issuer-home-muehlbachler-io
+      external-dns.alpha.kubernetes.io/provider: public
+      external-dns.alpha.kubernetes.io/target: 144.208.195.224,2a01:aea0:dd3:25a:1000:3:3:1
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    hosts:
+      - host: &domain status.home.muehlbachler.io
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            service:
+              identifier: gatus
+              port: 8080
+    tls:
+      - secretName: gatus-tls-cert
+        hosts:
+          - *domain
+
+persistence:
+  data:
+    enabled: true
+    storageClass: rook-ceph-block
+    accessMode: ReadWriteOnce
+    size: 200Mi
+    retain: false
+    globalMounts:
+      - path: /data
+  config:
+    enabled: true
+    type: emptyDir
+  config-file:
+    enabled: true
+    type: configMap
+    name: gatus-config
+    globalMounts:
+      - path: /config/config.yaml
+        subPath: config.yaml

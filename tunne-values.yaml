@@ -1,0 +1,19 @@
+cloudflare:
+  tunnelName: "kubernetes-tunnel-cloudflare"
+  tunnelId: "523115fe-615a-4b29-ba92-9ace8c9241ad"
+  secretName: "tunnel-credentials"
+  ingress:
+    - hostname: "*.wsiqueira.cloud"
+      service: "https://ingress-nginx-controller.kube-system.svc.cluster.local:443"
+      originRequest:
+        noTLSVerify: true
+
+resources:
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+replicaCount: 1

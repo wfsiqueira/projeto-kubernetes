@@ -1,0 +1,98 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: pihole
+spec:
+  releaseName: pihole
+  chart:
+    spec:
+      chart: pihole
+      sourceRef:
+        kind: HelmRepository
+        name: pihole
+      version: "2.29.1"
+  interval: 1h0m0s
+  values:
+    replicaCount: 3
+
+    ftl:
+      webserver_interface_theme: "default_dark"
+
+    serviceDns:
+      mixedService: false
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: 10.0.0.60
+        metallb.universe.tf/allow-shared-ip: pihole-dns-tcp,pihole-dns-udp
+
+    serviceDhcp:
+      enabled: false
+
+    serviceWeb:
+      enabled: true
+      type: LoadBalancer
+      externalTrafficPolicy: Local
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: 10.0.0.61
+ 
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+      limits:
+        memory: 500Mi
+
+    admin:
+      existingSecret: "pihole"
+      passwordKey: "password"
+
+    dnsmasq:
+      enableCustomDnsMasq: true
+      customDnsEntries:
+        - address=/mmontes.synology.me/10.0.0.50
+        - address=/pihole.homelab/10.0.0.61
+        - address=/.mmontes-internal.duckdns.org/10.0.0.70
+        - address=/mmontes-ramallal.synology.me/10.1.0.50
+        - address=/pihole.ramallal/10.1.0.100
+      customSettings:
+        - except-interface=nonexisting
+
+    podDnsConfig:
+      enabled: true
+      policy: "None"
+      nameservers:
+        - 8.8.8.8
+        - 8.8.4.4
+
+    priorityClassName: system-node-critical
+
+    podDisruptionBudget:
+      enabled: true
+
+    antiaff:
+      enabled: true
+
+    monitoring:
+      # TODO: podmonitor causes helmrelease to fail after render because it already contains a 'release' key
+      podMonitor:
+        enabled: false
+      sidecar:
+        enabled: true
+        port: 9617
+        image:
+          repository: ekofr/pihole-exporter
+          tag: v1.0.1
+          pullPolicy: IfNotPresent
+
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              version: v1
+              kind: Service
+              name: pihole-web  
+            patch: |
+              - op: add
+                path: /spec/sessionAffinity
+                value: ClientIP

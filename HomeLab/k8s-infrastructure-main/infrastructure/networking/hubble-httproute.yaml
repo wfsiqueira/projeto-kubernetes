@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: hubble
+spec:
+  parentRefs:
+    - name: traefik-internal
+      namespace: networking
+  hostnames:
+    - "hubble.mmontes-internal.duckdns.org"
+  rules:
+    - backendRefs:
+        - name: hubble-ui
+          port: 80

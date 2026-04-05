@@ -1,0 +1,37 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: duckdns
+spec:
+  releaseName: duckdns
+  chart:
+    spec:
+      chart: duckdns
+      sourceRef:
+        kind: HelmRepository
+        name: mmontes
+        namespace: flux-system
+      version: "0.3.0"
+  interval: 5m
+  values:
+    image:
+      repository: linuxserver/duckdns
+      pullPolicy: IfNotPresent
+      tag: d92ad8fe-ls19
+
+    subdomains:
+      - mmontes.duckdns.org
+
+    timezone: Europe/Madrid
+
+    secretRef:
+      name: duckdns
+
+    replicas: 1
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        memory: 100Mi

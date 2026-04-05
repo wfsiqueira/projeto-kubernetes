@@ -1,0 +1,54 @@
+192.168.3.1   - 192.168.3.50 - Local Servers / Device Network
+192.168.3.100 - 192.168.3.120 -> Range DHCP (Local Devices)
+192.168.3.121 - 192.168.3.159 -> Range DHCP (Convidados)
+192.168.3.160 - 192.168.3.199 -> MetalLB
+192.168.3.240 - 192.168.3.249 -> Cameras
+192.168.3.250 -> EXSI Server
+192.168.3.251 -> vCenter Server
+
+hostname				ip_address 	hw_address
+wsiqueira-firewall			192.168.3.1 	00:0C:29:E9:9C:7A
+wsiqueira-roteador-living-room		192.168.3.2 	CC:D8:43:1D:95:97
+wsiqueira-roteador-bebroom		192.168.3.3	50:88:11:B4:82:48
+wsiqueira-switch01			192.168.3.4	1C:2A:A3:1E:54:9F
+wsiqueira-switch02			192.168.3.5	AC:15:A2:60:FC:F7
+wsiqueira-storage			192.168.3.6	78:72:64:42:19:BF
+
+wsiqueira-vmkubernetesmaster		192.168.3.7	00:50:56:8f:8b:00
+wsiqueira-vmkubernetesworker01		192.168.3.8	00:50:56:8f:68:c5
+wsiqueira-vmkubernetesworker02		192.168.3.9	00:50:56:8f:c3:2f
+
+wsiqueira-vmwindows			192.168.3.10	00:50:56:8F:BD:DE
+
+wsiqueira-firetv			192.168.3.100	0C:43:F9:1B:36:B1
+wsiqueira-minipc			192.168.3.101	1C:83:41:29:14:47
+wsiqueira-minipc-wifi			192.168.3.102	08:5B:D6:A9:4E:03
+wsiqueira-dockstation			192.168.3.103	9C:EB:E8:72:7A:CA
+wsiqueira-iphone			192.168.3.104	C6:E9:0D:DA:DD:21
+wsiqueira-macbook			192.168.3.105	5C:E9:1E:98:54:33
+wsiqueira-applewatch			192.168.3.106	4A:01:C2:9D:28:7E
+wsiqueira-securitytoken			192.168.3.107	2C:C3:E6:38:4A:73
+mluzia-smartphone			192.168.3.108	7C:D6:61:B7:DE:BB
+mluzia-macbook				192.168.3.109	AC:BC:32:C4:F8:5D
+wmonteiro-webostv			192.168.3.110	4C:09:D4:45:C1:B5
+wmonteiro-arcondicionado		192.168.3.111	1C:39:29:1F:5C:37
+wmonteiro-minipc-wifi			192.168.3.112	00:E0:4C:76:8A:89
+wmonteiro-smartphone			192.168.3.113	F6:C4:7B:12:FB:22
+wmonteiro-ipad				192.168.3.114	00:F7:6F:E3:79:F3
+wmonteiro-macbook			192.168.3.115	3C:06:30:38:A6:9E
+jmonteiro-smartphone			192.168.3.116	56:39:58:63:A8:B4
+jmonteiro-notebook			192.168.3.117	8E:3D:12:0D:D9:7E
+jmonteiro-notebook-unimed		192.168.3.118	5C:CD:5B:A7:A8:C8
+wsiqueira-smartphone			192.168.3.119	02:D3:81:56:C5:29
+wsiqueira-hyundaiI30			192.168.3.120	00:08:22:80:02:FC
+stavares-smartphone			192.168.3.121	12:A6:5D:C4:4E:8A
+stavares-macbook			192.168.3.122	F0:18:98:75:0C:1
+jtavares-smartphone			192.168.3.123	76:DD:26:2D:F5:06
+
+wsiqueira-securitycamera01		192.168.3.240	EC:41:F9:66:C7:F2
+wsiqueira-securitycamera02		192.168.3.241	4C:60:BA:15:FF:E2
+wsiqueira-securitycamera03		192.168.3.242	4C:60:BA:17:A3:4B
+wsiqueira-securitycamera04		192.168.3.243	4C:60:BA:CB:25:42
+
+wsiqueira-exsiserver			192.168.3.250	00:E0:4C:88:2E:3F
+wsiqueira-vcenter			192.168.3.251	00:0C:29:ED:C9:8A

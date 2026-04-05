@@ -1,0 +1,93 @@
+## General settings
+nameOverride: "minio"
+fullnameOverride: "minio"
+
+## Cluster domain
+clusterDomain: cluster.local
+
+## MinIO container image
+image:
+  repository: quay.io/minio/minio
+  tag: RELEASE.2024-12-18T13-15-44Z
+  pullPolicy: IfNotPresent
+
+mcImage:
+  repository: quay.io/minio/mc
+  tag: RELEASE.2024-11-21T17-21-54Z
+  pullPolicy: IfNotPresent
+
+## MinIO mode
+mode: standalone
+
+## MinIO access credentials
+rootUser: ""
+rootPassword: ""
+existingSecret: minio-login
+
+## Persistence configuration
+persistence:
+  enabled: true
+  storageClass: nfs                 # Use default storage class if empty
+  accessMode: ReadWriteMany         # Necessary for NFS
+  size: 150Gi                       # Requested storage size
+  annotations: {}                   # Optional annotations
+
+## MinIO service configuration
+service:
+  type: LoadBalancer                # Expose MinIO API as a LoadBalancer
+  port: "9000"                      # MinIO API port
+  nodePort: 32000                   # Optional NodePort setting
+  annotations: {}                   # Optional annotations
+  loadBalancerSourceRanges: {}      # Restrict access (if needed)
+
+consoleService:
+  type: LoadBalancer                # Expose MinIO Console as a LoadBalancer
+  port: "9001"                      # Console port
+  nodePort: 32001                   # Optional NodePort setting
+  annotations: {}                   # Optional annotations
+  loadBalancerSourceRanges: {}      # Restrict access (if needed)
+
+## Security context
+securityContext:
+  enabled: true
+  runAsUser: 65534
+  runAsGroup: 100
+  fsGroup: 100
+  fsGroupChangePolicy: "OnRootMismatch"
+
+## Metrics and monitoring
+metrics:
+  serviceMonitor:
+    enabled: true
+    includeNode: true
+    public: true
+    # for node metrics
+    relabelConfigs: {}
+    # for cluster metrics
+    relabelConfigsCluster: {}
+      # metricRelabelings:
+      #   - regex: (server|pod)
+      #     action: labeldrop
+    namespace: minio
+    # Scrape interval, for example `interval: 30s`
+    interval: 60s
+    # Scrape timeout, for example `scrapeTimeout: 10s`
+    scrapeTimeout: 30s
+  
+
+customCommands:
+  command: "MINIO_PROMETHEUS_AUTH_TYPE=public"
+
+resources:
+  requests:
+    memory: 2Gi
+    cpu: 500m
+  limits:
+    memory: 4Gi
+    cpu: 1
+
+## Additional custom commands
+customCommands: []
+
+
+

@@ -1,0 +1,190 @@
+# -- deployment replicas: number of replica pods to deploy
+replicaCount: 1
+
+strategy:
+  # -- strategy type for the deployment updates. options: "RollingUpdate" or "Recreate"
+  type: RollingUpdate
+
+image:
+  # -- image repository that defaults to the official Home Assistant GitHub ghcr.io repo
+  repository: ghcr.io/home-assistant/home-assistant
+  # -- image pullPolicy. If using tag: latest, set image.pullPolicy: Always
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+# -- fullname override to use for all chart resources, instead of helm release name
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: true
+  # -- Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use.
+  # -- If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+# -- labels to apply to all pods
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  # -- default port to expose
+  port: 80
+  # -- default port for the home home-assistant container
+  targetPort: 8123
+
+ingress:
+  # -- enable external traffic to this pod
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# -- resource requests and limits. example: for requesting a USB device from the
+#    [generic device plugin](https://github.com/squat/generic-device-plugin)
+#
+#  limits:
+#    squat.ai/serial: 1
+resources: {}
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+persistence:
+  # -- enable or disable persistent volumes
+  enabled: false
+  # -- annotations for your persistent volume
+  annotations: {}
+  # -- storageClass for your persistent volume. if using vanilla k3s, set to local-path
+  storageClass: ""
+  # -- acccessMode for your persistent volume
+  accessMode: "ReadWriteOnce"
+  # -- size of your persistent volume
+  size: "8Gi"
+  # -- use an existing persistent volume claim instead of creating one with this chart
+  existingClaim: ""
+
+# -- Additional volumes on the output Deployment definition. example device as volume:
+#
+#  - hostPath:
+#      path: >-
+#        /dev/serial/by-id/usb-ITEAD_SONOFF_Zigbee_3.0_USB_Dongle_Plus_V2_20230509111242-if00
+#      type: CharDevice
+#    name: usb
+extraVolumes: []
+
+# -- Additional volumeMounts on the output Deployment definition. example device mount:
+#
+#  - mountPath: /dev/ttyACM0
+#    name: usb
+extraVolumeMounts: []
+
+# -- extra environment variables to pass to the home assistant container, see:
+# https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/#define-an-environment-variable-for-a-container
+extraEnv: []
+
+nodeSelector: {}
+
+# -- tolerations to have the home assisant pod tolerate node taints
+tolerations: []
+
+# -- affinity to have the home assisant pod attracted to a specific node
+affinity: {}
+
+homeAssistant:
+  # -- The timezone to use for this container. Use one of the identifers here:
+  # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
+  timezone: ""
+  # -- hacs is the [home assistant community store](https://hacs.xyz/)
+  setupHacsJobs:
+    # -- enable the hacs setup job, requires persistence to be on
+    enabled: false
+  owner:
+    # -- whether to create an initial owner (admin) user to disable registration
+    create: false
+    # -- enable debug mode for the user creation job. WARNING: This reveals secret data
+    debug: false
+    # -- name of the owner user, ignored if owner.existingSecret is set
+    name: "admin"
+    # -- login username of the owner user, ignored if owner.existingSecret is set
+    username: "admin"
+    # -- login password of the owner user, ignored if owner.existingSecret is set
+    password: ""
+    # -- language of the owner user, ignored if owner.existingSecret is set
+    language: "en"
+    # -- if your home assistant is using ingress, this is the external url you
+    # connect to, example: https://home-assistant.cooldogsonline.net/
+    # (ignored if owner.existingSecret is set)
+    externalURL: ""
+    # -- existingSecret for the owner user's credentials secret keys must be:
+    # ADMIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_LANGUAGE, EXTERNAL_URL
+    existingSecret: ""
+  # -- any data you'd like to see put into your configuration.yaml
+  ## example config
+  # configuration: |
+  #   # this enables proxies such as the ingress nginx controller
+  #   http:
+  #     use_x_forwarded_for: true
+  #     trusted_proxies:
+  #       - 10.0.0.0/8
+  #   mobile:
+  #
+  #   config:
+  configuration: ""
+  # -- name of existing ConfigMap
+  existingConfigurationConfigMap: ""
+  # -- contents of themes.yaml file to create, ignored if homeAssistant.existingThemesConfigMap set
+  themes: ""
+  # -- name of existing themes ConfigMap
+  existingThemesConfigMap: ""
+  # -- contents of automations.yaml file to create, ignored if homeAssistant.existingAutomationsConfigMap set
+  automations: ""
+  # -- name of existing automations ConfigMap
+  existingAutomationsConfigMap: ""
+  # -- conents of scenes.yaml file to create, ignored if homeAssistant.existingScenesConfigMap set
+  scenes: ""
+  # -- name of existing scenes ConfigMap
+  existingScenesConfigMap: ""
+

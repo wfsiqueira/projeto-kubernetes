@@ -1,0 +1,4 @@
+---
+creation_rules:
+  - encrypted_regex: ^(data|stringData)$
+    gcp_kms: projects/tuxnet-385112/locations/europe/keyRings/infrastructure-encryption/cryptoKeys/infrastructure-encryption

@@ -1,0 +1,228 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: rook-ceph-cluster
+spec:
+  releaseName: rook-ceph-cluster
+  chart:
+    spec:
+      chart: rook-ceph-cluster
+      sourceRef:
+        kind: HelmRepository
+        name: rook
+      version: "v1.16.5"
+  interval: 1h0m0s
+  values:
+    operatorNamespace: storage
+    clusterName: rook-ceph
+
+    monitoring:
+      enabled: true
+      createPrometheusRules: true
+
+    cephClusterSpec:
+      cephVersion:
+        image: quay.io/ceph/ceph:v19.2.0-20240927
+      cephConfig:
+        global:
+          # speed up OSD recovery
+          # https://docs.ceph.com/en/latest/rados/configuration/osd-config-ref/?highlight=osd_max_backfills#confval-osd_max_backfills
+          osd_max_backfills: "10"
+          # allowed clock drift (in seconds) between mons 
+          # https://docs.ceph.com/en/latest/rados/configuration/mon-config-ref/?highlight=mon_clock_drift_allowed#confval-mon_clock_drift_allowed
+          mon_clock_drift_allowed: "0.05"
+      dataDirHostPath: /var/lib/rook
+      mon:
+        count: 3
+        allowMultiplePerNode: false
+      mgr:
+        count: 2
+        allowMultiplePerNode: false
+      dashboard:
+        enabled: true
+        port: 8443
+        ssl: false
+      crashCollector:
+        disable: false
+      logCollector:
+        enabled: true
+      resources:
+        mgr:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 2Gi
+        mon:
+          requests:
+            cpu: 500m
+            memory: 600Mi
+          limits:
+            memory: 600Mi
+        osd:
+          requests:
+            cpu: 1
+            memory: 4Gi
+          limits:
+            memory: 4Gi
+        prepareosd:
+          requests:
+            cpu: "500m"
+            memory: "50Mi"
+          # limits: It is not recommended to set limits on the OSD prepare job
+          #         since it's a one-time burst for memory that must be allowed to
+          #         complete without an OOM kill.  Note however that if a k8s
+          #         limitRange guardrail is defined external to Rook, the lack of
+          #         a limit here may result in a sync failure, in which case a
+          #         limit should be added.  1200Mi may suffice for up to 15Ti
+          #         OSDs ; for larger devices 2Gi may be required.
+          #         cf. https://github.com/rook/rook/pull/11103
+        mgr-sidecar:
+          requests:
+            cpu: "100m"
+            memory: "40Mi"
+          limits:
+            memory: "100Mi"
+        crashcollector:
+          requests:
+            cpu: "100m"
+            memory: "60Mi"
+          limits:
+            memory: "60Mi"
+        logcollector:
+          requests:
+            cpu: "10m"
+            memory: "100Mi"
+          limits:
+            memory: "100Mi"
+        cleanup:
+          requests:
+            cpu: "500m"
+            memory: "100Mi"
+          limits:
+            memory: "1Gi"
+        exporter:
+          requests:
+            cpu: "50m"
+            memory: "50Mi"
+          limits:
+            memory: "128Mi"
+
+      # automatically remove OSDs that are out and are safe to destroy
+      removeOSDsIfOutAndSafeToRemove: false
+      storage:
+        useAllNodes: false
+        useAllDevices: false
+        nodes:
+          - name: storage-0
+            devices:
+              - name: nvme0n1
+          - name: storage-1
+            devices:
+              - name: nvme0n1
+          - name: storage-2
+            devices:
+              - name: nvme0n1
+      placement:
+        all:
+          tolerations:
+            - effect: NoSchedule
+              key: node.mmontes.io/storage
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: node.mmontes.io/type
+                  operator: In
+                  values:
+                  - storage
+
+    cephBlockPools:
+      - name: rook-ceph-blockpool
+        spec:
+          failureDomain: host
+          replicated:
+            size: 3
+        storageClass:
+          enabled: true
+          name: rook-ceph
+          isDefault: true
+          reclaimPolicy: Delete
+          allowVolumeExpansion: true
+          volumeBindingMode: "Immediate"
+          mountOptions: []
+          parameters:
+            imageFormat: "2"
+            imageFeatures: layering
+            csi.storage.k8s.io/provisioner-secret-name: rook-csi-rbd-provisioner
+            csi.storage.k8s.io/provisioner-secret-namespace: storage
+            csi.storage.k8s.io/controller-expand-secret-name: rook-csi-rbd-provisioner
+            csi.storage.k8s.io/controller-expand-secret-namespace: storage
+            csi.storage.k8s.io/node-stage-secret-name: rook-csi-rbd-node
+            csi.storage.k8s.io/node-stage-secret-namespace: storage
+            csi.storage.k8s.io/fstype: ext4
+
+    cephBlockPoolsVolumeSnapshotClass:
+      enabled: true
+      name: rook-ceph
+      isDefault: false
+      deletionPolicy: Delete
+
+    cephFileSystems:
+      - name: rook-ceph-fs
+        spec:
+          metadataPool:
+            replicated:
+              size: 3
+          dataPools:
+            - failureDomain: host
+              replicated:
+                size: 3
+              name: data0
+          metadataServer:
+            activeCount: 1
+            activeStandby: false
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+            placement:
+              tolerations:
+                - effect: NoSchedule
+                  key: node.mmontes.io/storage
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: node.mmontes.io/type
+                      operator: In
+                      values:
+                      - storage
+            priorityClassName: system-cluster-critical
+        storageClass:
+          enabled: true
+          isDefault: false
+          name: rook-ceph-fs
+          pool: data0
+          reclaimPolicy: Delete
+          allowVolumeExpansion: true
+          volumeBindingMode: "Immediate"
+          mountOptions: []
+          parameters:
+            csi.storage.k8s.io/provisioner-secret-name: rook-csi-cephfs-provisioner
+            csi.storage.k8s.io/provisioner-secret-namespace: storage
+            csi.storage.k8s.io/controller-expand-secret-name: rook-csi-cephfs-provisioner
+            csi.storage.k8s.io/controller-expand-secret-namespace: storage
+            csi.storage.k8s.io/node-stage-secret-name: rook-csi-cephfs-node
+            csi.storage.k8s.io/node-stage-secret-namespace: storage
+            csi.storage.k8s.io/fstype: ext4
+
+    cephFileSystemVolumeSnapshotClass:
+      enabled: true
+      name: rook-ceph-fs
+      isDefault: false
+      deletionPolicy: Delete
+
+    cephObjectStores: []

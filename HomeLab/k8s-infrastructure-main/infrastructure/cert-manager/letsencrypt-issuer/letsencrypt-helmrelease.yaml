@@ -1,0 +1,32 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: letsencrypt
+spec:
+  chart:
+    spec:
+      chart: cert-manager-webhook-duckdns
+      sourceRef:
+        kind: HelmRepository
+        name: mmontes
+        namespace: flux-system
+      version: "v1.2.3"
+  interval: 1h0m0s
+  values:
+    fullnameOverride: letsencrypt
+    groupName: mmontes.io
+
+    certManager:
+      namespace: pki
+      serviceAccountName: cert-manager
+
+    secret:
+      existingSecret: true
+      existingSecretName: "duckdns"
+
+    clusterIssuer:
+      email: martin11lrx@gmail.com
+      staging:
+        create: true
+      production:
+        create: true

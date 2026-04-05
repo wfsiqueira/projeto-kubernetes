@@ -1,0 +1,68 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: traefik-internal
+spec:
+  chart:
+    spec:
+      chart: traefik
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+      version: "32.1.0"
+  interval: 1h0m0s
+  values:
+    instanceLabelOverride: traefik-internal
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+    ingressRoute:
+      dashboard:
+        enabled: false
+    ingressClass:
+      enabled: true
+      isDefaultClass: false
+    ports:
+      web:
+        redirectTo:
+          port: websecure
+          priority: 10
+    providers:
+      kubernetesCRD:
+        enabled: true
+        ingressClass: traefik-internal
+      kubernetesIngress:
+        enabled: true
+        ingressClass: traefik-internal
+    additionalArguments:
+      - "--serverstransport.insecureskipverify"
+      - "--experimental.kubernetesgateway"
+      - "--providers.kubernetesgateway"
+      - "--providers.kubernetesgateway.labelselector=gatewayclass.mmontes.io/type=traefik-internal"
+    service:
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: 10.0.0.70
+    deployment:
+      enabled: true
+      kind: Deployment
+      replicas: 2
+    affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         - labelSelector:
+             matchLabels:
+               app.kubernetes.io/name: traefik
+               app.kubernetes.io/instance: traefik-internal
+           topologyKey: kubernetes.io/hostname
+    priorityClassName: system-node-critical 
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+      limits:
+        memory: 300Mi

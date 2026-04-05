@@ -1,0 +1,194 @@
+---
+fullnameOverride: victoria-metrics
+
+crds:
+  enabled: true
+
+victoria-metrics-operator:
+  enabled: true
+  operator:
+    disable_prometheus_converter: false
+    enable_converter_ownership: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+    limits:
+      memory: 100Mi
+
+defaultRules:
+  create: true
+  rules:
+    etcd: false # restricted by certificates
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubeApiserverAvailability: true
+    kubeApiserverBurnrate: true
+    kubeApiserverHistogram: true
+    kubeApiserverSlos: true
+    kubelet: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    vmagent: true
+    vmsingle: true
+    vmcluster: false
+    vmhealth: true
+    alertmanager: false
+
+defaultDashboardsEnabled: true
+experimentalDashboardsEnabled: true
+
+vmsingle:
+  enabled: true
+  annotations:
+    helm.toolkit.fluxcd.io/driftDetection: disabled
+  spec:
+    retentionPeriod: "14"
+    replicaCount: 1
+    logLevel: WARN
+    extraArgs:
+      maxLabelsPerTimeseries: "150"
+    resources:
+      requests:
+        cpu: 105m
+        memory: 1867Mi
+      limits:
+        memory: 1867Mi
+    storage:
+      storageClassName: rook-ceph-block
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+  ingress:
+    enabled: false
+
+vmcluster:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+vmalert:
+  enabled: false
+
+vmagent:
+  enabled: true
+  spec:
+    scrapeInterval: 120s
+    minScrapeInterval: 60s
+    maxScrapeInterval: 900s
+    logLevel: WARN
+    resources:
+      requests:
+        cpu: 25m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+    externalLabels:
+      cluster: home
+      environment: prod
+
+grafana:
+  enabled: false
+  forceDeployDatasource: true
+  sidecar:
+    datasources:
+      label: grafana_datasource
+    dashboards:
+      label: grafana_dashboard
+
+prometheus-node-exporter:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+    limits:
+      memory: 100Mi
+
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 156Mi
+    limits:
+      memory: 156Mi
+
+kubelet:
+  enabled: true
+  vmScrape:
+    spec:
+      metricRelabelConfigs:
+        - action: labeldrop
+          regex: (uid)
+        - action: labeldrop
+          regex: (id|name)
+        - action: labeldrop
+          regex: "extensions_talos_dev_.*"
+        - action: labeldrop
+          regex: "feature_node_kubernetes_io_.*"
+        - action: labeldrop
+          regex: "nvidia_com_.*"
+        - action: drop
+          source_labels: [__name__]
+          regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
+
+kubeApiserver:
+  enabled: true
+
+kubeControllerManager:
+  enabled: true
+  service:
+    selector:
+      k8s-app: kube-controller-manager
+  spec:
+    jobLabel: jobLabel
+    endpoints:
+      - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+        # bearerTokenSecret:
+        #   key: ""
+        port: http-metrics
+        scheme: https
+        tlsConfig:
+          insecureSkipVerify: true
+          caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          serverName: kubernetes
+
+kubeDns:
+  enabled: false
+
+coreDns:
+  enabled: true
+
+kubeEtcd:
+  enabled: false # restricted by certificates
+
+kubeScheduler:
+  enabled: true
+  service:
+    selector:
+      k8s-app: kube-scheduler
+  spec:
+    jobLabel: jobLabel
+    endpoints:
+      - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+        port: http-metrics
+        scheme: https
+        tlsConfig:
+          insecureSkipVerify: true
+          caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+kubeProxy: # disabled
+  enabled: false

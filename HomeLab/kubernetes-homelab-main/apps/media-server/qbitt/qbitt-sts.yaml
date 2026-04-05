@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: qbitt
+  namespace: media
+spec:
+  serviceName: qbitt
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qbitt
+  template:
+    metadata:
+      labels:
+        app: qbitt
+    spec:
+      containers:
+        - name: qbitt
+          image: linuxserver/qbittorrent
+          resources:
+            limits:
+              memory: "2Gi"
+            requests:
+              memory: "512Mi"
+          env:
+            - name: PUID
+              value: "1057"
+            - name: PGID
+              value: "1056"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /downloads
+          ports:
+            - containerPort: 8080
+            - containerPort: 6881 # Add this port for torrent traffic
+            - containerPort: 6881 # UDP for tracker communication
+              protocol: UDP
+
+        - name: gluetun
+          image: qmcgaw/gluetun
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: "nordvpn"
+            - name: OPENVPN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: nordvpn-secrets
+                  key: NORDVPN_USER
+            - name: OPENVPN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nordvpn-secrets
+                  key: NORDVPN_PASSWORD
+            - name: SERVER_COUNTRIES
+              value: "Switzerland"
+            - name: FIREWALL_VPN_INPUT_PORTS
+              value: "6881,6969,1337" # Allow input traffic for common BitTorrent ports
+            - name: FIREWALL_VPN_OUTPUT_PORTS
+              value: "6881,6969,1337" # Allow output traffic for common BitTorrent ports
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+            privileged: true
+          volumeMounts:
+            - name: config
+              mountPath: /gluetun
+            - name: downloads
+              mountPath: /downloads
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: qbitt
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: qbitt-download

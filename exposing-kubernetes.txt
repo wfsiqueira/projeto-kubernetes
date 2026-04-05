@@ -1,0 +1,85 @@
+### Instalando o controlador de entrada (ingress-nginx)
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm upgrade -i ingress-nginx ingress-nginx/ingress-nginx \
+    --namespace kube-system \
+    --set controller.service.type=ClusterIP \
+    --set controller.ingressClassResource.default=true \
+    --wait
+
+### Criando o túnel do cloudflare
+
+kubectl create namespace cloudflare
+
+kubectl create secret generic cloudflare-api-key \
+  --from-literal=apiKey=3XnGsbGjnNOzVxOP1cL0AUB6_0rL5YHdBdJ9ZEup \
+  --from-literal=email=willianfsiqueira@hotmail.com \
+  --namespace=cloudflare
+
+# curl "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+#      -H "Authorization: Bearer 3XnGsbGjnNOzVxOP1cL0AUB6_0rL5YHdBdJ9ZEup"
+# 
+# A browser window should have opened at the following URL:
+# 
+# https://dash.cloudflare.com/argotunnel?aud=&callback=https%3A%2F%2Flogin.cloudflareaccess.org%2FQYCJp3HiZZznOFEGOc2ONx2U52s7Xs-_qhm1GQ7Do2M%3D
+# 
+# If the browser failed to open, please visit the URL above directly in your browser.
+# 2025-06-10T21:39:40Z INF You have successfully logged in.
+# If you wish to copy your credentials to a server, they have been saved to:
+# /Users/williansiqueira/.cloudflared/cert.pem
+
+
+# cloudflared tunnel create kubernetes-tunnel-cloudflare                                                                                                              ✔  20s   18:39:40 
+# Tunnel credentials written to /Users/williansiqueira/.cloudflared/523115fe-615a-4b29-ba92-9ace8c9241ad.json. cloudflared chose this file based on where your origin certificate was found. Keep this file secret. To revoke these credentials, delete the tunnel.
+# 
+# Created tunnel kubernetes-tunnel-cloudflare with id 523115fe-615a-4b29-ba92-9ace8c9241ad
+
+kubectl create secret generic tunnel-credentials \
+  --from-file=credentials.json=/Users/williansiqueira/.cloudflared/523115fe-615a-4b29-ba92-9ace8c9241ad.json \
+  --namespace=cloudflare
+
+## Implantação da Cloudflared
+
+cat > tunne-values.yaml <<EOF
+cloudflare:
+  tunnelName: "kubernetes-tunnel-cloudflare"
+  tunnelId: "523115fe-615a-4b29-ba92-9ace8c9241ad"
+  secretName: "tunnel-credentials"
+  ingress:
+    - hostname: "*.wsiqueira.cloud"
+      service: "https://ingress-nginx-controller.kube-system.svc.cluster.local:443"
+      originRequest:
+        noTLSVerify: true
+
+resources:
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+replicaCount: 1
+EOF
+
+helm repo add cloudflare https://cloudflare.github.io/helm-charts
+helm repo update
+helm upgrade --install cloudflare cloudflare/cloudflare-tunnel \
+  --namespace cloudflare \
+  --values tunne-values.yaml \
+  --wait
+
+## Instalar dns externo
+
+helm repo add kubernetes-sigs https://kubernetes-sigs.github.io/external-dns/
+helm repo update
+helm upgrade --install external-dns kubernetes-sigs/external-dns \
+  --namespace cloudflare \
+  --set sources[0]=ingress \
+  --set policy=sync \
+  --set provider.name=cloudflare \
+  --set env[0].name=CF_API_TOKEN \
+  --set env[0].valueFrom.secretKeyRef.name=cloudflare-api-key \
+  --set env[0].valueFrom.secretKeyRef.key=apiKey \
+  --wait

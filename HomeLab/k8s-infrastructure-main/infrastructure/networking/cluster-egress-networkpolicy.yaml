@@ -1,0 +1,42 @@
+apiVersion: "cilium.io/v2"
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: cluster-egress
+spec:
+  description: "Deny access to host network for all namespaces except networking and monitoring"
+  endpointSelector:
+    matchExpressions:
+    - key: "k8s:io.kubernetes.pod.namespace"
+      operator: "NotIn"
+      values:
+      - networking
+      - monitoring
+  egress:
+    - toEntities:
+        - all
+  egressDeny:
+    - toCIDRSet:
+        - cidr: 10.0.0.0/24
+          except:
+            - 10.0.0.20/32
+            - 10.0.0.21/32
+            - 10.0.0.22/32
+            - 10.0.0.23/32
+            - 10.0.0.24/32
+            - 10.0.0.25/32
+            - 10.0.0.30/32
+            - 10.0.0.31/32
+            - 10.0.0.32/32
+            - 10.0.0.50/32
+            - 10.0.0.100/32
+    - toCIDRSet:
+        - cidr: 10.1.0.0/24
+          except:
+            - 10.1.0.20/32
+            - 10.1.0.21/32
+            - 10.1.0.22/32
+            - 10.1.0.23/32
+            - 10.1.0.30/32
+            - 10.1.0.40/32
+            - 10.1.0.50/32
+            - 10.1.0.100/32
